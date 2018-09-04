@@ -17,7 +17,7 @@
       (str/split #"\\|/")
       (->> (str/join "/"))))
 
-(defn public-sass-file? [filename] (re-matches #"^.*\\[^_\\]*\.(scss|sass)$" filename))
+(defn public-sass-file? [filename] (re-matches #"^.*(\\|/)[^_\\/]*\.(scss|sass)$" filename))
 
 (defn public-sass-files [path]
   (->> path
