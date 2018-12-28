@@ -23,7 +23,7 @@
     (spit out-path (.getCss out))
     (spit (str out-path ".map") (.getSourceMap out))))
 
-(defn compile-once
+(defn once
   "Compiles SASS at source path once and places result in target."
   [source target]
   (info "Compiling SASS files...")
@@ -36,19 +36,19 @@
       (warn "ERROR: An error occurred while compiling SASS files")
       (warn (.toString e)))))
 
-(defn compile-auto
+(defn auto
   "Watches source path and recompiles automatically when change detected."
   [source target]
-  (compile-once source target)
+  (once source target)
   (info "Waiting for file changes...")
-  (files/watch-path source target #'compile-once))
+  (files/watch-path source target #'once))
 
 (defn jsass
   "Compiles sass to css. Expects project map and 'mode' string."
-  {:subtasks [#'compile-once #'compile-auto]}
+  {:subtasks [#'once #'auto]}
   [project & [mode]]
   (let [{:keys [source target]} (:jsass project)]
     (case mode
-      "once" (compile-once source target)
-      "auto" (compile-auto source target)
+      "once" (once source target)
+      "auto" (auto source target)
       (warn "Unknown mode. Use either 'once' or 'auto'. Aborting..."))))

@@ -1,6 +1,7 @@
 (ns io.file-util
   (:require [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [leiningen.core.main])
   (:import (java.nio.file WatchService WatchKey Path FileSystems
                           StandardWatchEventKinds WatchEvent)
            (java.io File)))
@@ -34,31 +35,32 @@
                      (str/split (re-pattern src-path))
                      last)
         local-name (str/join "." (butlast (str/split local-in #"\.")))]
-    {:file file
+    {:file     file
      :out-path (str dest-path local-name ".css")}))
 
-(defn handle-event [^WatchEvent ev ^Path dir dest-path handler]
+(defn handle-event [^WatchEvent ev ^File dir dest-path handler]
   (when-not (= StandardWatchEventKinds/OVERFLOW
                (.kind ev))
-    (let [fname (.context ev)
-          child (.resolve dir ^Path fname)]
+    (let [fname (.context ev)]
       (info "Change detected... Recompiling...")
-      (info (-> child (.toFile) (.getAbsolutePath)))
-      (handler (-> dir (.toFile) (.getAbsolutePath) standardize-filepath)
+      (handler (-> dir (.getAbsolutePath) standardize-filepath)
                dest-path))))
 
 (defn watch-path [src-path dest-path handler]
   (info (str "Watching " src-path " for changes..."))
-  (let [service (.. FileSystems getDefault newWatchService)
-        watch-path (.toPath ^File (io/as-file src-path))
-        watch-key (.register ^Path watch-path
-                             service
-                             (into-array (keys ev-types)))]
+  (let [service (.newWatchService (FileSystems/getDefault))
+        files (file-seq (io/as-file src-path))]
+    (doseq [f (filter #(.isDirectory %) files)]
+      (.register (.toPath f)
+                 service
+                 (into-array (keys ev-types))))
     (loop []
       (let [nk (.take service)
             _ (Thread/sleep 50)         ;; Delay to prevent repeated events for single file change
             events (.pollEvents nk)]
         (when events
-          (handle-event (first events) watch-path dest-path handler))
+          (handle-event (first events)
+                        (io/as-file src-path)
+                        dest-path handler))
         (when (.reset nk)
           (recur))))))

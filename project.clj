@@ -1,4 +1,4 @@
-(defproject lein-jsass "0.2.0"
+(defproject lein-jsass "0.2.1"
   :description "Lein plugin wrapper for jsass. https://github.com/bit3/jsass"
   :url "https://github.com/grantpeltier/lein-jsass"
   :license {:name "MIT License"}
